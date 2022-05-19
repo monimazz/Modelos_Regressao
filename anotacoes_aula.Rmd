@@ -1,0 +1,144 @@
+---
+title: "Anotacoes da aula"
+output: html_notebook
+---
+
+## Regressao com dados categoricos
+
+### Dados binários
+Dados categoricos como "homem" e "mulher" onde homem representa 0 e mulher representa 1.
+
+No caso temos
+
+`HOMEM: y = b1 . 0  + b2.x2 + u`
+
+`MULHER: y = b1 . 1 + b2.x2 + u`
+
+Entao a leitura desse coeficiente, se estivermos fazendo uma regressao contendo somente gênero e salário, em que salário é a variável y e genero x, logo se for mulher, será o intercepto (salário de y) mais o coeficiente.
+
+```{r}
+library(tidyverse)
+pnad <- read_csv("pnad2015.csv")
+
+mqo <- lm(salariom ~ sexo, data = pnad, na.action=na.exclude)
+summary(mqo)
+
+```
+
+No caso: O Salário médio dos homens, de acordo com o intercepto é 1875,9 reais, caso for 1, ou seja, mulheres, há uma queda de 485,2 reais de salário, sendo assim seu salário médio de 1390 reais.
+
+### Dados com mais de uma categoria
+
+No caso de cor, por exemplo, temos as categorias:0, 2, 4, 6 e 8. Cada uma correspondente a uma identificacao de cor.
+
+Todavia, só podemos realizar uma regressao com variáveis binárias, entao devemos *criar colunas para essas variáveis e o valor correspondente deve ser 0 ou 1, indicando sim ou nao para essa variável*
+
+
+
+```{r}
+pnad_dummycor <- pnad %>% 
+  pivot_wider(names_from = cor, values_from = cor, values_fill = 0 )
+
+```
+
+
+## Aula 3
+#### Teste de hipóteses
+
+Inferência - possível sempre cometer esses dois tipos de erro, pois a partir de um teste pensamos no total ou infinito.
+
+**Exemplo: Uma pessoa consegue diferenciar a marca de cervejas de duas cervejas somente pelo sabor. Assim vamos fazer um teste com ela, irá provar 20 doses, 10 da cerveja A e 10 da cerveja B.**
+
+1. Estabelecemos uma regra de decisao de corte: se acertar 10
+2. Para dar sentindo, precisamos criar uma hipótese, entao estabelecemos uma hipótese nula `H0`, em que para facilitar as nossas contas será _"Ele está mentindo e nao sabe diferenciar"_. Se ele acertar 10 nao posso dizer que está mentindo.
+
+Mas podemos cometer erros com a regra de decisao:
+
+1. Rejeite a hipótese nula, quando na verdade nao sabe. Rejeitar `H0` verdadeira
+2. Se ele acertar menos que 10 digo que está mentindo, quando na verdade nao estar. Nao rejeitar `H0` falsa.
+
+Entender qual é a chance de cometer algum desses erros, tipo 1 ou tipo 2.
+
+
+#### ERRO TIPO 1
+Rejeitar um `H0` verdadeiro
+
+Se ele está mentindo, ele vai chutar, entao a probabilidade de acertar é 50% (já que sao 2 tipos de cerveja somente)
+
+**Erro do tipo 1:** Probabilidade do indivíduo acertar mais que decisao de corte (Xc), dado que ele está mentindo. -> nível descritivo do teste.
+
+- Distribuicao binominal de probabilidades.
+
+#### ERRO TIPO 2
+Nao Rejeitar um `H0` falso
+
+**Erro do tipo 1:** Probabilidade (P) do indivíduo nao acertar mais que decisao de corte (Xc), dado que ele sabe distinguir -> funcao poder do teste, pois depende de P, preciso fixar esse valor de P.
+
+
+#### P-VALOR
+Definindo um valor critico, calculamos a probabilidade de acertar o valor ou mais dado que está mentindo
+Probabilidade do erro do tipo 1, se o x crítico, fosse exatamente o número de acertos da pessoas.
+Se escolhi xc como critério, qual a probabilidade de fazer um erro do tipo 1.
+
+Se a probabilidade for grande nao vou rejeitar a hipótese, pois a probabilidade fazelo é grande, se for pequena ou correr esse risco e rejeito a hipótese.
+
+H0 = b1 = 0
+
+y = b0 + b1x1, Se b1 for zero entao y = b0 (uma constante mais o erro e nao se relaciona com o X)
+
+Estatística de teste
+Calcular o beta estimado pelo MQO, e perguntar qual a chance de enocntrar uma amostra com b1 estimado ou mais distante que zero?
+
+Se eu disser que esse efeito nao existe na populacao, qual a probabilidade de estar fazendo um erro? Se o efeito nao existe na populacao a probabilidade de cometer um erro é muito grande, se probabilidade é pequena, posso dizer que H0 é falso.
+
+#### Termos de interacao
+
+##### Quali x Quanti
+Variável quantitativa tem efeito na variável y, mas efeito é diferente conforme a categoria (quali) que o indivíduo pertence.
+
+`x: Mulheres = 1; Homens = 0`
+`z: escolaridade`
+`y: renda`
+
+Criamos a variavel B3 de interacao entre genero e escolaridade:
+`y = B0 + B1z + B2x + B3xz`
+
+Homens: `y = B0 + B1z`
+Mulheres: y = B0 + B1z + B2 + B3z -> `y = (B0 + B2) + (B1 + B3)z`
+ 
+Ou seja, o valor esperado de um homem com 0 anos de escolaridade é B0, um valor de uma mulher com zero anos de escolaridade é B0 + B2, para cada ano de escolaridade, a mulher ganha B1 + B3, o B3 modifica o efeito da escolaridade.
+
+B2 é a diferencia na média, no intercepto.
+
+B3 modifica o efeito que a escolaridade tem na renda conforme o gênero
+
+##### Quali x Quali
+
+x: 0 homem, 1 mulher
+z: 0 negra, 1 outros
+
+As relacoes entre as variáveis: x = 0 e z = 0, homem negro, x = 1, z = 0 mulher negra e etc.
+
+y = b0 + b1x + b2z
+
+Valor esperado de Y conforme as categorias:
+homem negro: y = B0 
+homem branco:  y = B0 + B2 
+mulher negra: y = B0 + B1
+mulher branca: y = B0 + B1 + B2
+
+B1 diferenca entre homens e mulheres negros
+Efeito do gênero e raca.
+
+Incluir um efeito de interacao, única diferenca é que teremos um efeito amais de b3, ou seja, quando as duas categorias tem valor 1, há um efeito extra.
+
+Efeito de uma variável, depende do valor de outra variável.
+
+`y = B0 + B1z + B2x + B3xz`
+
+O Coeficiente vai ser interpretado de acordo com a tabela de relacoes.
+
+
+
+
+

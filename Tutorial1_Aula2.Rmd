@@ -1,0 +1,169 @@
+---
+title: "Tutorial 1 aula 2"
+author: "Mônica Rocabado"
+output:
+  word_document: default
+  html_notebook: default
+  pdf_document: default
+---
+
+Resolucao individual do exercício. 
+
+```{r, message=FALSE}
+library(tidyverse)
+pnad <- read_csv("pnad2015.csv")
+```
+
+#### *PERGUNTA 1*
+
+_O grupo começa estimando o impacto do sexo, uma variável binária (dummy) igual a 1 para mulheres (0 caso contrário), no salário (variável salariom) através do modelo de regressão linear simples. O grupo interpreta o coeficiente de sexo. Alguém do grupo pergunta qual seria o salário médio de homens de acordo com os resultados da regressão do grupo. A mesma pessoa pergunta se esse resultado seria suficiente para dizer que existe discriminação de gênero. O grupo responde as perguntas, justificando a resposta_
+
+```{r}
+mqo <- lm(salariom ~ sexo, data = pnad, na.action=na.exclude)
+summary(mqo)
+
+```
+**R:** O Salário médio dos homens, de acordo com o intercepto é 1875,9 reais, caso for 1, ou seja, mulheres, há uma queda de 485,2 reais de salário, sendo assim seu salário médio de 1390 reais.
+Todavia isso nao é o suficiente para determinar se o discriminacao de genero, dado que há outros fatores que podem levar a esse resultado, como tipo de trabalho que leva a essa remuneracao, anos de escolaridade, entre outros, ainda que seja um indicativo que isto pode ocorrer.
+
+
+```{r,include=FALSE}
+#testando a resposta acima
+pnad %>% 
+  filter(sexo == 0,
+         salariom >= 0) %>% 
+  select(salariom) %>% 
+  summary(salariom)
+```
+
+
+#### *PERGUNTA 2*
+
+_A vice-diretora olha os resultados preliminares e diz que é importante colocar outras variáveis de controle no modelo acima, tais como escolaridade, idade,cor/raça e uma variável dummy igual a 1 se o indivíduo mora em região rural (0 caso contrário). O grupo roda a regressão incluindo as variáveis de controle e interpreta novamente o coeficiente de sexo, comparando com o coeficiente encontrado na questão anterior._
+
+```{r}
+mq1 <- lm(salariom ~ sexo+educ+idade+cor+rural, data = pnad, na.action=na.exclude)
+summary(mq1)
+```
+Nota-se uma mudanca no valor do intercepto e também em sexo, quase dobrando o valor negativo para mulher, ou seja, as variáveis possuem alguma relacao entre si. 
+
+A lógica do modelo de regressao multipla é _"O modelo de regressão linear múltipla mantém os valores das outras variáveis independentes fixos mesmo se houver correlação"_
+
+Logo no caso, mantendo as variáveis constantes:
+
+- `sexo`: Ser mulher (1) diminui o salário em 802 reais
+- `educ`: Um ano a mais de escolaridade aumenta o salário em 223 reais
+- `idade`: Um ano a mais de vida aumenta a o salário em 39 reais
+- `cor`: **?Dúvida:** como explicar se cor possui várias opcoes categoricas??
+- `rural`: Morar em regiao rural diminui o salário em 333 reais
+
+```{r, include=FALSE}
+#testando relacao entre variáveis
+lm(salariom ~ sexo+rural, data = pnad, na.action=na.exclude)
+
+```
+
+
+#### *PERGUNTA 3*
+
+_O grupo mostra os resultados da regressão acima para a vice-diretora do centro de pesquisa. Ela pergunta se o grupo considerou um possível efeito não linear da idade no salário. O grupo cria uma variável de idade ao quadrado e *estima um modelo com `idade` e `idade ao quadrado` na regressão incluindo as variáveis da questão anterior*. O grupo interpreta o coeficiente de idade_
+
+```{r}
+hist(pnad$idade)
+
+pnad <- pnad %>% 
+  mutate(idadequadrado = idade*idade)
+```
+
+Agora fazendo a regressao:
+
+```{r}
+
+mq2 <- lm(salariom ~ sexo+educ+idade+cor+rural+idadequadrado, data = pnad, na.action=na.exclude)
+summary(mq2)
+
+```
+**R: **As informacoes no geral se mantiveram, no entanto, se nota uma diferenca do coeficiente para variável `idade` e da variavel `idadequadrado`, em que o primeiro está positivo e o segundo negativo, logo no primeiro a cada ano de idade, um aumento de 87 reais, enquanto no segundo a cada ano adicional de idade, deve-se aplicar o efeito na formula
+
+Efeito marginal da idade: `219.1662idade - 2(-0.5851)idade`
+
+Já que: "A interpretação da estimativa do estimador de 𝑥1 vai
+depender do seu valor"
+
+(Comentário: modelo quadrático. Há valores ótimos existentes, o quadratico vai gerar um gráfico de curva com ponto ótimo, derivada igual a zero encontra o ponto ótimo. A interpretacao muda:
+o efeito é um aumento ou diminuicao de b1+b2+2b2x)
+
+
+#### *PERGUNTA 4*
+
+_A vice-diretora do projeto sugere que seria interessante estimar usar a transformação logarítmica na variável dependente, e pede para estimar uma _regressão do logaritmo natural do salário mensal no sexo e no número de horas de afazeres domésticos não remunerado (variável horasdom)_, _além das outras variáveis da questão anterior. O grupo tenta rodar uma nova regressão usando o logaritmo natural do salário mensal como variável dependente e sexo e horas de afazeres domésticos não remunerado como variáveis explicativas, incluindo as variáveis de controle da questão anterior, mas obtém o erro._
+
+_O erro  quer dizer que a transformação logarítmica produziu o valor -∞ para indivíduos sem salário mensal (𝑠𝑎𝑙á𝑟𝑖𝑜𝑚 = 0), pois o logaritmo natural de 0 não é determinado. O grupo conversa com uma aluna terminando sua dissertação e ela sugere rodar o código abaixo para transformar os valores -∞ em dados faltantes (NA), onde pnad é o nome do objeto que armazena a base de dados._
+_O grupo corrige o problema e roda novamente a regressão linear do logaritmo natural do salário mensal no sexo, nas horas de trabalho doméstico não remunerado e nas outras variáveis de controle da questão anterior. Funcionou!!! Agora sim, O grupo interpreta os coeficientes das horas de afazeres doméstico não remunerado, escolaridade e sexo_
+
+```{r}
+pnad <- pnad %>% 
+  mutate(logsalariom = log(salariom))
+
+is.na(pnad) <- sapply(pnad, is.infinite) # transformando todos os - Inf # em missing data (NA)
+
+#modelo log linear, em que a variável dependente y fica com log
+lqo3 <- lm(logsalariom ~ sexo+educ+idade+cor+rural+idadequadrado+horasdom, data = pnad, na.action=na.exclude)
+summary(lqo3)
+
+```
+
+A interpretacao muda, pois nao tenho mais y, tenho `log(y)`, assim um aumento de uma unidade de `x` nao leva a um aumento esperado de b1 em y.
+Aumentar 1 unidade `X` leva um aumento *relativo* de `b1*100%` em y
+
+- `sexo`: -0.34*100 = Ser mulher e com as demais variáveis constantes leva a uma reducao de -34% do salário.
+- `educ`: -0.10*100 = Cada ano de escolaridade e com as demais variáveis constantes leva a uma reducao -10% do salário (???)
+- `idade`: 0.07*100 = 7%
+- `cor`: -0.035*100 = -3.5% (nao sei como interpretar)
+- `rural`: -0.36*100 = Ser do rural e com as demais variáveis constantes leva a uma reducao de -36% do salário
+- `idadequadrado`: (0.07*100) - 2(-0.36*100) = 79%
+- `horasdom`: -0.01*100 = A cada hora de atividade domiciliar e com as demais variáveis constantes leva a uma reducao -1% do salário
+
+
+#### *PERGUNTA 5*
+
+_Um aluno ingressante do mestrado acadêmico pergunta sobre a(s) razão(ões) pela qual fazemos a transformação logarítmica em uma variável dependente, e o grupo explica o(s) principais motivo(s)_
+
+Motivos para usar o log:
+
+1. Quando a relacao entre x e y é exponencial e nao linear
+2. Quando o resíduo nao possui distribuicao normal
+
+Sendo assim, respectivamente:
+1. lineariza as relacoes, reduz a complexidade das relacoes matemáticas.
+2. O log de y, leva a um um padrao esperado de uma distribuicao normal, pois simetriza e concentra valores, entao tende tornar uma coisa assimétrica para simétrica e trazer valores distantes para mais perto.
+
+#### *PEGUNTA 6*
+
+_Por fim, a vice-diretora comenta que a transformação logarítmica nas horas de afazeres domésticos também poderia ser feita, pois poderia facilitar a interpretação. O grupo faz a transformação e estima o modelo da questão 4. O grupo interpreta os coeficientes do log(ℎ𝑜𝑟𝑎𝑠𝑑𝑜𝑚) e escolaridade_
+
+```{r}
+pnad <- pnad %>% 
+  mutate(loghorasdom = log(horasdom))
+
+lqo4 <- lm(logsalariom ~ sexo+educ+idade+cor+rural+idadequadrado+loghorasdom, data = pnad, na.action=na.exclude)
+summary(lqo4)
+
+```
+
+(Comentários: Em caso de modelo linear log, onde y se mantém e o log ocorre nas variáveis independentes
+Interpretacao aproximada/relativa.
+aumentar 1% induz um aumento ou diminuicao de b1/100 unidades em y)
+
+- `horasdom`: -0.131*100 = A cada hora de atividade domiciliar e com as demais variáveis constantes leva a uma reducao -13% do salário
+- `educ`: 0.1*100 = A cada ano de escolaridade e com as demais variáveis constantes leva a um aumento de 10% do salário
+
+
+##### Duvidas gerais para aula
+
+- Como analisar o resultado quando há todas as formas combinadas (log-linear, linear-log, quadrático)?
+- Como avaliamos a relacao entre as variáveis independentes? Isso importa para análise?
+- Qual o momento que retiramos uma variável ou quando percebemos que ela nao é relevante para o modelo?
+- Como analisar o coeficiente quadrático? Realmente a A interpretação da estimativa do estimador de 𝑥1 vai depender do seu valor?
+- Como interpretar o coeficiente de variáveis categoricas como cor?
+

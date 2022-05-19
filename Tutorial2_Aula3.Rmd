@@ -1,0 +1,220 @@
+---
+title: "Tutorial 2"
+output: html_notebook
+---
+
+Você entra em um estágio de pesquisa no Centro de Estudos de Microfinanças e Inclusão Financeira (Cemif)1. Uma das pesquisadoras afiliadas ao Cemif te convida para trabalhar em um projeto de acesso a crédito de pequenas e médias empresas usando os dados do World Bank Enterprise Surveys (WBES)2, coletados no Brasil em 2009. A base de dados, brasil2009.csv, e o dicionário das variáveis estão na pasta do tutorial 2.
+
+```{r}
+library(tidyverse)
+brasil <- read_csv("brasil2009.csv")
+```
+
+
+A pesquisadora diz que a base não foi tratada e precisa de alguns ajustes. Por exemplo, as respostas são codificadas com números negativos quando a(o) respondente não sabe (-9) ou se recusa a responder (-7). Para isso, você precisa transformar os números negativos em dados faltantes (NA). Um exemplo para fazer esta transformação usando o R está abaixo para a variável d2 (faturamento total anual). Vocês vão precisar usar o código abaixo para outras variáveis.
+
+```{r, warning=F, message=F}
+brasil$d2 <- ifelse(brasil$d2 < 0, NA, brasil$d2)
+```
+
+A coordenadora do centro te pede um apoio. Ela está interessada em examinar o **impacto de investir em ativos fixos na produtividade do trabalho em pequenas e médias empresas (PMEs)**. Você nota que a variável produtividade do trabalho não está disponível na sua base de dados. No entanto, alguns estudos utilizam como proxy para produtividade o
+faturamento anual (variável d2) dividido pelo número de funcionários (variável l1 – leia- se letra l minúscula e número 1) (Amin e Okou, 2020; Motta, 2020; Kouamé e Tapsoba, 2019; Friesen e Wacker, 2019). Você cria essa variável
+
+```{r}
+brasil$l1 <- ifelse(brasil$l1 < 0, NA, brasil$l1)
+
+brasil <- brasil %>% 
+  mutate(produtividade = d2/l1,
+         logprodutividade = log(produtividade))
+
+is.na(brasil) <- sapply(brasil, is.infinite) # transformando todos os - Inf # em missing data (NA)
+```
+
+_Verificar produtividade_
+```{r}
+#hist(brasil$produtividade)
+hist(brasil$logprodutividade)
+
+```
+
+
+#### PERGUNTA 1
+
+Você estima uma regressão simples do impacto da empresa ter realizado
+investimentos em ativos fixos (variável k4) no **logaritmo da produtividade da empresa**, e **interprete o resultado**. Na base, está variável dummy é igual a 1 para “Sim” e 2 para “Não”. Você ajusta essa variável e coloca 0 para “Não” ao invés de 2. (Dica: variáveis dummies são codificadas como 1 ou 0. Desta maneira, você vai ter que transformar o 2 (Não) em 0 além de transformar os números negativos em NAs)
+
+```{r}
+brasil$k4 <- ifelse(brasil$k4 < 0, NA, brasil$k4)
+brasil$k4 <- ifelse(brasil$k4 == 2, 0, brasil$k4)
+
+mqo <- lm(logprodutividade ~ k4, data = brasil)
+
+summary(mqo)
+```
+**Resposta:**
+??A interpretacao muda, pois nao tenho mais y, tenho log(y), assim um aumento de uma unidade de x nao leva a um aumento esperado de b1 em y. Aumentar 1 unidade X leva um aumento relativo de b1*100% em y
+??(Comentários: Em caso de modelo linear log, onde y se mantém e o log ocorre nas variáveis independentes Interpretacao aproximada/relativa. aumentar 1% induz um aumento ou diminuicao de b1/100 unidades em y)
+
+Entao a análise da mudanca é
+`y = b0 + b1x1`
+
+y = log(produtividade)
+x = realizacao de investimento
+
+log(produtividade) = 10,14 + 0.52*100x
+
+Entao, para caso ocorra investimentos em ativos fixos, o aumento relativo da produtividade é em 52%
+
+#### PERGUNTA 2
+Você mostra o resultado acima para a coordenadora e ela comenta que você não pode fazer afirmações sobre o efeito do investimento na produtividade sem considerar que você está trabalhando apenas com uma amostra. Você não
+entende bem o que ela quer dizer e ela te sugere fazer uma pesquisa sobre p-valores e o teste t para coeficientes de regressão. Você interpreta o coeficiente do investimento e teste hipótese nula 
+
+𝐻0 : 𝛽𝑖𝑛𝑣𝑒𝑠𝑡𝑖𝑚𝑒𝑛𝑡𝑜 = 0 
+contra a hipótese alternativa 
+𝐻𝑎 : 𝛽𝑖𝑛𝑣𝑒𝑠𝑡𝑖𝑚𝑒𝑛𝑡𝑜 ≠ 0 . 
+
+Qual o valor da estatística t? Podemos rejeitar a hipótese nula para um nível de significância de 5%?
+
+**Resposta:**
+H0 significa que o investimento nao foi feito
+H1 significa que o investimento foi feito
+
+```{r}
+t.test(logprodutividade ~ k4, data = brasil)
+```
+O p-valor é inferior a 5%, logo quem recebe investimento e quem nao recebe possui diferenca significativa entre as médias.
+Podemos assumir a hipótese H0 como falsa.
+
+O valor de T é -4.47 (O que isso significa?)
+
+#### PERGUNTA 3
+A pesquisadora do Cemif sugere que você inclua outras variáveis de controle no seu modelo. Ela sugere dar uma olhada no paper Islam, Gaddis, Palacios López e Amin (2020) para ter ideias sobre potenciais variáveis de controle. **Por exemplo,a idade da empresa pode estar associada à produtividade**. No entanto, a base possui apenas o ano em que a empresa iniciou sua operação (b5). Você uma variável de idade da firma igual a diferença entre o ano fiscal atual (2007) e o ano em que a empresa iniciou sua operação. **Além da idade, você coloca outras variáveis de controle que podem impactar a produtividade do trabalho da firma**
+
+```{r}
+brasil$b5 <- ifelse(brasil$b5 < 0, NA, brasil$b5)
+
+brasil <- brasil %>% 
+  mutate(idade_firma = 2007-b5)
+
+```
+
+Corrigindo outras variáveis
+```{r}
+
+```
+
+Rodando o modelo
+```{r}
+mqo2 <- lm(logprodutividade ~ k4+idade_firma, data = brasil)
+
+summary(mqo)
+```
+
+
+#### PERGUNTA 4
+Conhecendo o conceito de p-valor, você observa que a saída do R do resumo do modelo na questão anterior apresenta, além dos testes t para os coeficientes, um teste F para o modelo como um todo. Para completar seu relatório deste primeiro projeto, você vai pesquisar sobre esse teste F. Qual a hipótese nula do teste? Como interpretar a rejeição ou não-rejeição desse teste?
+
+**Resposta:**
+Teste-f é usado para comparar a variancia. Comparar a variancia entre grupos, quadrado médio dos resíduos.
+
+Comparar a variancia de dois grupos.
+Exige normalidade dos dados quando homogeneidade de variancia.
+H0 x e y possuem a mesma variancia?
+
+Rejeitamos um H0 quando o valor do pvalor é menor que 1%
+
+```{r}
+var.test()
+```
+
+
+#### PERGUNTA 5
+Você nota que na saída do R do resumo do modelo aparece uma coluna
+denominada erro padrão (Std. Error). Um outro estudante não entende muito
+bem o que é o erro-padrão e você explica para ele, falando também sobre a
+relação do erro padrão com o p-valor dos testes t.
+
+**Resposta:**
+
+
+#### PERGUNTA 6
+O gênero da(o) proprietária(o) pode ser um preditor do faturamento anual, pois existem diferenças no faturamento entre empresas lideradas por mulheres e homens (Islam, Gaddis, Palacios López e Amin, 2020). Você cria a variável binária (dummy) igual a 1 se existe ao menos uma mulher proprietária (b4) no modelo de regressão anterior e sugere que talvez seja interessante estimar se o impacto de um ano a mais de experiência em gestão (b7) na produtividade do trabalho é o mesmo para mulheres e homens em cargos de direção (b7a). Você estima o modelo abaixo:
+
+log(𝑝𝑟𝑜𝑑𝑢𝑡𝑖𝑣𝑖𝑑𝑎𝑑𝑒) = 𝛽0 + 𝛽1𝑒𝑥𝑝 + 𝛽2𝑚𝑢𝑙ℎ𝑒𝑟 + 𝛽3𝑒𝑥𝑝 ∗ 𝑚𝑢𝑙ℎ𝑒𝑟
+
+onde log(faturamento) é o logaritmo natural do faturamento anual, exp é a
+experiência do(a) gestor (a) na área de atuação (em anos), e mulher é uma
+variável dummy igual a 1 se a diretora principal for mulher (0 caso contrário).
+Você interpreta o coeficiente do termo de interação entre experiência e mulher
+
+```{r}
+brasil$b7a <- ifelse(brasil$b7a < 0, NA, brasil$b7a)
+brasil$b7a <- ifelse(brasil$b7a == 2, 0, brasil$b7a)
+
+brasil$b7 <- ifelse(brasil$b7 < 0, NA, brasil$b7)
+
+brasil <- brasil %>% 
+  mutate(logfaturamento = log(d2))
+
+```
+
+Modelo
+```{r}
+mqo3 <- lm(logfaturamento ~ b7 + b7a + I(b7*b7a), data = brasil)
+summary(mqo3)
+```
+
+**Resposta:**
+
+
+#### PERGUNTA 7
+Uma estudante em fase de término mestrado acadêmico comenta com o grupo
+que sua dissertação consiste em examinar o impacto da competição no mercado informal no faturamento da empresa. Um estudo mostra que pequenas e médias empresas (PMEs) são as mais afetadas pela competição com empresas informais (González e Lamanna, 2007; Distinguin et al, 2016). A pesquisadora acha interessante e pede para você estimar o modelo abaixo:
+
+log(𝑓𝑎𝑡𝑢𝑟𝑎𝑚𝑒𝑛𝑡𝑜) = 𝛽0 + 𝛽1𝑖𝑛𝑓𝑜𝑟𝑚𝑎𝑙 + 𝛽2𝑝𝑚𝑒 + 𝛽3𝑖𝑛𝑓𝑜𝑟𝑚𝑎𝑙 ∗ 𝑝𝑚𝑒
+
+onde log(faturamento) é o logaritmo natural do faturamento anual, informal
+(e11) é uma variável dummy igual a 1 se a empresa compete com empresas
+informais (0 caso contrário), e pme é uma variável dummy igual a 1 se a
+empresa é de pequeno e médio porte (0 caso contrário). De acordo com a
+definição do Banco Mundial, a variável pme pode ser construída da seguinte forma: ela vai ser igual a 1 se a variável do número de funcionários em tempo integral (l1) for menor do que 100 (0 caso contrário). Calcule as diferenças no faturamento, em percentual, entre PMEs que competem no mercado informal e as categorias abaixo:
+a. PMEs que não competem no mercado informal
+b. Empresas grandes que competem no mercado informal
+c. Empresas grandes que não competem no mercado informal
+
+
+```{r}
+brasil$e11 <- ifelse(brasil$e11 < 0, NA, brasil$e11)
+brasil$e11 <- ifelse(brasil$e11 == 2, 0, brasil$e11)
+
+brasil <- brasil %>% 
+  mutate(pme = case_when(l1 < 100 ~ 1,
+                         TRUE ~ 0))
+
+```
+
+Modelo
+```{r}
+mqo4 <- lm(logprodutividade ~ e11 + pme + I(e11*pme), data = brasil)
+summary(mqo4)
+```
+
+x: 0 nao compete com empresas informais , 1  compete com empresas informais 
+z: 0 grande, 1 pme
+
+`y = B0 + B1x + B2z + B3xz`
+
+nao compete e é grande y = B0 
+nao compete e é pme:  y = B0 + B2 
+compete e é grande: y = B0 + B1
+compete e é pme: y = B0 + B1 + B2 + B3
+
+##### PERGUNTA 7a
+PMEs que não competem no mercado informal
+
+
+##### PERGUNTA 7b
+Empresas grandes que competem no mercado informal
+
+##### PERGUNTA 7c
+Empresas grandes que não competem no mercado informal
