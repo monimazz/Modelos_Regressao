@@ -87,6 +87,14 @@ Podemos assumir a hipótese H0 como falsa.
 
 O valor de T é -4.47 (O que isso significa?)
 
+"O valor-p para cada termo testa a hipótese nula de que o coeficiente é igual a zero (sem efeito). Um valor-p baixo (< 0,05) indica que você pode rejeitar a hipótese nula. Em outras palavras, uma preditora que tenha um valor-p baixo provavelmente será uma adição significativa ao seu modelo, porque as alterações no valor da preditora estão relacionadas a alterações na variável resposta."
+
+"Os testes t recebem essa denominação porque os resultados do teste são todos baseados em valores-t. Os valores-t são um exemplo de o que os estatísticos chamam de estatísticas de teste. Uma estatística de teste é um valor padronizado que é calculado a partir de dados amostrais durante um teste de hipótese. O procedimento que calcula a estatística de teste compara seus dados com o que é esperado sob a hipótese nula.
+
+Cada tipo de teste t usa um procedimento específico para resumir todos os seus dados amostrais em um valor, o valor-t. Os cálculos por trás dos valores-t comparam sua(s) média(s) amostrais com a hipótese nula e incorporam o tamanho amostral e a variabilidade nos dados. Um valor-t de 0 indica que os resultados da amostra são exatamente iguais à hipótese nula. Conforme aumenta a diferença entre os dados amostrais e a hipótese nula, o valor absoluto do valor-t aumenta."
+
+"Por si só, um valor-t de 2 não nos diz nada. Os valores-t não estão nas unidades dos dados originais ou em qualquer outra coisa com a qual estejamos familiarizados. Precisamos de um contexto maior em que possamos colocar valores-t individuais para que seja possível interpretá-los. É aqui que entram as distribuições t."
+
 #### PERGUNTA 3
 A pesquisadora do Cemif sugere que você inclua outras variáveis de controle no seu modelo. Ela sugere dar uma olhada no paper Islam, Gaddis, Palacios López e Amin (2020) para ter ideias sobre potenciais variáveis de controle. **Por exemplo,a idade da empresa pode estar associada à produtividade**. No entanto, a base possui apenas o ano em que a empresa iniciou sua operação (b5). Você uma variável de idade da firma igual a diferença entre o ano fiscal atual (2007) e o ano em que a empresa iniciou sua operação. **Além da idade, você coloca outras variáveis de controle que podem impactar a produtividade do trabalho da firma**
 
@@ -100,16 +108,24 @@ brasil <- brasil %>%
 
 Corrigindo outras variáveis
 ```{r}
+#protect themselves from business environment issues such as crime and power #outages #i1 e #c6
+brasil$i1 <- ifelse(brasil$i1 < 0, NA, brasil$i1)
+brasil$i1 <- ifelse(brasil$i1 == 2, 0, brasil$i1)
+
+brasil$c6 <- ifelse(brasil$c6  < 0, NA, brasil$c6)
+brasil$c6  <- ifelse(brasil$c6  == 2, 0, brasil$c6)
 
 ```
 
 Rodando o modelo
 ```{r}
-mqo2 <- lm(logprodutividade ~ k4+idade_firma, data = brasil)
+mqo2 <- lm(logprodutividade ~ k4+idade_firma+i1+c6, data = brasil)
 
-summary(mqo)
+summary(mqo2)
 ```
 
+**Resposta**
+Como eu interpreto os coeficientes?
 
 #### PERGUNTA 4
 Conhecendo o conceito de p-valor, você observa que a saída do R do resumo do modelo na questão anterior apresenta, além dos testes t para os coeficientes, um teste F para o modelo como um todo. Para completar seu relatório deste primeiro projeto, você vai pesquisar sobre esse teste F. Qual a hipótese nula do teste? Como interpretar a rejeição ou não-rejeição desse teste?
@@ -121,11 +137,21 @@ Comparar a variancia de dois grupos.
 Exige normalidade dos dados quando homogeneidade de variancia.
 H0 x e y possuem a mesma variancia?
 
-Rejeitamos um H0 quando o valor do pvalor é menor que 1%
+Rejeitamos um H0 quando o valor do p-valor é menor que 1%
 
-```{r}
-var.test()
-```
+Dessa forma, podemos rejeitar o H0 do modelo.
+
+
+Comentário: "Quando falamos de regressão, um teste F geralmente compara os ajustes de diferentes modelos lineares. Ao contrário de testes t que conseguem avaliar apenas um coeficiente de regressão de cada vez, o teste F pode avaliar vários coeficientes ao mesmo tempo.
+
+O teste F da significância global é uma forma específica do teste F. Ele compara um modelo sem preditores com o modelo especificado por você. Um modelo de regressão que não contém preditores também é conhecido como um modelo somente com o intercepto.
+
+As hipóteses para o teste F da significância global são as seguintes:
+
+Hipótese nula: O ajuste do modelo somente com o intercepto e seu modelo são iguais.
+Hipótese alternativa: O ajuste do modelo somente com intercepto é significativamente reduzido quando comparado ao seu modelo"
+
+**dúvida** qual é H0??
 
 
 #### PERGUNTA 5
@@ -135,7 +161,8 @@ bem o que é o erro-padrão e você explica para ele, falando também sobre a
 relação do erro padrão com o p-valor dos testes t.
 
 **Resposta:**
-
+"Use o erro padrão do coeficiente para medir a precisão da estimativa do coeficiente. Quanto menor o erro padrão, mais precisa é a estimativa. Dividir o coeficiente pelo erro padrão calcula um valor t. Se o valor de p associado a esta estatística de t for menor do que o seu nível de significância, você deve concluir que o coeficiente é estatisticamente significativo.
+O valor-t mede a razão entre o coeficiente e seu erro padrão."
 
 #### PERGUNTA 6
 O gênero da(o) proprietária(o) pode ser um preditor do faturamento anual, pois existem diferenças no faturamento entre empresas lideradas por mulheres e homens (Islam, Gaddis, Palacios López e Amin, 2020). Você cria a variável binária (dummy) igual a 1 se existe ao menos uma mulher proprietária (b4) no modelo de regressão anterior e sugere que talvez seja interessante estimar se o impacto de um ano a mais de experiência em gestão (b7) na produtividade do trabalho é o mesmo para mulheres e homens em cargos de direção (b7a). Você estima o modelo abaixo:
@@ -211,10 +238,19 @@ compete e é pme: y = B0 + B1 + B2 + B3
 
 ##### PERGUNTA 7a
 PMEs que não competem no mercado informal
-
+log(Y) = 10,81 + -0,16*100
 
 ##### PERGUNTA 7b
 Empresas grandes que competem no mercado informal
+log(Y) = 10,81 + 0,09*100
 
 ##### PERGUNTA 7c
 Empresas grandes que não competem no mercado informal
+log(Y) = 10,81
+
+
+
+**Dúvidas**
+
+- Como interpretar os coeficientes de valores interelacionados com log modelo?
+- O que na prática significa o teste t e o teste f no R? Consigo olhar somente pelo lm ou preciso fazer algum outro código?
