@@ -45,6 +45,8 @@ pnad_dummycor <- pnad %>%
 ## Aula 3
 #### Teste de hipóteses
 
+H0 significa que vai contra minha condição inicial. Para regressão, 0 H0 é referente ao coeficiente, ou seja, se há relação entre as variáveis dependentes e independentes.
+Em uma regressão, H0 significa normalmente quando não há relação. H0: B1x = 0 
 Inferência - possível sempre cometer esses dois tipos de erro, pois a partir de um teste pensamos no total ou infinito.
 
 **Exemplo: Uma pessoa consegue diferenciar a marca de cervejas de duas cervejas somente pelo sabor. Assim vamos fazer um teste com ela, irá provar 20 doses, 10 da cerveja A e 10 da cerveja B.**
