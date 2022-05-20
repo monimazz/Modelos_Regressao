@@ -192,7 +192,9 @@ summary(mqo3)
 ```
 
 **Resposta:**
-
+A interação de -1,5% significa que o impacto de ser mulher e ter mais escolaridade é 1,5% menor caso for homem.
+Homem no caso seria um aumento de 3,5% do faturamento dado mais educação
+Mulher no caso é um aumento de 1,95% do faturamento dado mais educação
 
 #### PERGUNTA 7
 Uma estudante em fase de término mestrado acadêmico comenta com o grupo
